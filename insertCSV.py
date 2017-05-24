@@ -19,16 +19,11 @@ class ReusableForm(Form):
     city = StringField('city:', validators=[validators.required()])
     country = StringField('country:', validators=[validators.required()])
 
-    def reset(self):
-        blankData = MultiDict([('csrf', self.reset_csrf())])
-        self.process(blankData)
-
 
 @app.route("/", methods=['GET', 'POST'])
 def hello():
     form = ReusableForm(request.form)
 
-    print form.errors
     if request.method == 'POST':
         name = request.form['name']
         surname = request.form['surname']
@@ -37,17 +32,42 @@ def hello():
         city = request.form['city']
         country = request.form['country']
         fieldnames = ['name', 'surname', 'job', 'company', 'city', 'country']
+        mydict = {'name': name, 'surname': surname, 'job': job, 'company': company, 'city':city, 'country':country}
 
-        if form.validate():
-            with open('nameList.csv', 'a') as inFIle:
-                flash('Thanks for registration ' + name)
-                writer = csv.DictWriter(inFIle, fieldnames=fieldnames)
-                writer.writerow({'name': name, 'surname': surname, 'job': job, 'company': company, 'city': city,
-                                 'country': country})
-        else:
-            flash('Error: All the form fields are required. ')
+        with open('nameList.csv', 'a') as inFIle:
+            writer = csv.writer(inFIle)
+            for key, value in mydict.items():
+                writer.writerow([key, value])
+            #writer.writerow({'name': name, 'surname': surname, 'job': job, 'company': company, 'city': city,
+            #                 'country': country})
 
     return render_template('form.html', form=form)
+
+
+@app.route("/search", methods=['GET', 'POST'])
+def search():
+    form = ReusableForm(request.form)
+    var = ""
+
+    if request.method == 'POST':
+        searched = request.form['searched']
+
+        with open('datasetBigDive.csv', 'r') as inFIle:
+            reader = csv.reader(inFIle)
+            campo = []
+
+            for row in reader:
+                for value in row:
+                    if value == searched:
+                        campo.append(row)
+                        var = str(campo)
+
+        if campo == []:
+            return "Sorry value doesn't exist"
+        else:
+            return var
+
+    return render_template('search.html', form=form)
 
 
 if __name__ == "__main__":
